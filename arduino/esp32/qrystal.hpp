@@ -31,7 +31,7 @@ private:
             esp_http_client_cleanup(client);
             client = NULL;
         }
-        cachedCredentials = ""; // Force re-parse on next connect
+        cachedCredentials.clear(); // Force re-parse on next connect
     }
 
 public:
