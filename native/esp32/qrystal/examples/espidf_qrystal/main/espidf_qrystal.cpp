@@ -1,8 +1,13 @@
 /**
- * Qrystal Uplink SDK - ESP-IDF Example
+ * Qrystal Uplink SDKs
+ * Official SDKs for Qrystal Uplink - device monitoring and heartbeat service <https://uplink.qrystal.partners/>.
  *
- * This example demonstrates how to send heartbeat signals to Qrystal Uplink
- * using the native ESP-IDF SDK.
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Qrystal Uplink, Qrystal Partners, Mikayel Grigoryan
+ * <https://uplink.qrystal.partners/>
+ *
+ * @file espidf_qrystal.cpp
+ * @brief ESP-IDF Example - demonstrates sending heartbeat signals to Qrystal Uplink.
  *
  * Before running:
  * 1. Set your WiFi credentials below
