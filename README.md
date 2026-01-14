@@ -1,4 +1,5 @@
-<img width="1280" height="640" alt="Qrystal Partners Logo" src="https://github.com/user-attachments/assets/459c4653-19da-43ad-800e-c008b03de4ca" />
+<img width="64" height="64" alt="Qrystal Partners Logo Light" src="https://github.com/user-attachments/assets/25d51146-3adf-4179-b78e-6723325dcb00" />
+
 
 # Qrystal Uplink SDKs
 
