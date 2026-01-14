@@ -21,13 +21,16 @@
 static const char *TAG = "qrystal_uplink";
 static const uint32_t YEAR_2026_EPOCH = 1767244149;
 
-class Qrystal {
+class Qrystal
+{
 private:
   static esp_http_client_handle_t client;
   static String cachedCredentials;
 
-  static void reset_client() {
-    if (client != NULL) {
+  static void reset_client()
+  {
+    if (client != NULL)
+    {
       esp_http_client_cleanup(client);
       client = NULL;
     }
@@ -35,7 +38,8 @@ private:
   }
 
 public:
-  typedef enum {
+  typedef enum
+  {
     Q_OK = 0x0,
     Q_QRYSTAL_ERR,
     Q_ERR_NO_WIFI,
@@ -47,19 +51,23 @@ public:
     Q_ESP_HTTP_ERROR
   } QRYSTAL_STATE;
 
-  static QRYSTAL_STATE uplink_blocking(const String &credentials) {
+  static QRYSTAL_STATE uplink_blocking(const String &credentials)
+  {
     static bool timeReady = false;
     static uint32_t lastSyncTime = 0;
 
     // Step 1: Verify WiFi connectivity using ESP-IDF API
     wifi_ap_record_t ap_info;
-    if (esp_wifi_sta_get_ap_info(&ap_info) != ESP_OK) {
+    if (esp_wifi_sta_get_ap_info(&ap_info) != ESP_OK)
+    {
       return Q_ERR_NO_WIFI;
     }
 
     // Step 2: Verify time synchronization with staleness detection
-    if (!timeReady) {
-      if (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+    if (!timeReady)
+    {
+      if (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED)
+      {
         ESP_LOGW(TAG, "SNTP sync not completed, initializing SNTP");
         esp_sntp_init();
         return Q_ERR_TIME_NOT_READY;
@@ -67,18 +75,22 @@ public:
 
       uint32_t sec, usec;
       sntp_get_system_time(&sec, &usec);
-      if (sec < YEAR_2026_EPOCH) {
+      if (sec < YEAR_2026_EPOCH)
+      {
         ESP_LOGW(TAG, "System time not yet valid (epoch: %lu, expected >= %lu)", sec, YEAR_2026_EPOCH);
         return Q_ERR_TIME_NOT_READY;
       }
 
       timeReady = true;
       lastSyncTime = sec;
-    } else {
+    }
+    else
+    {
       // Check for time staleness (>24h) or clock adjustments
       uint32_t sec, usec;
       sntp_get_system_time(&sec, &usec);
-      if (sec < lastSyncTime || (sec - lastSyncTime) > 86400) {
+      if (sec < lastSyncTime || (sec - lastSyncTime) > 86400)
+      {
         ESP_LOGW(TAG, "Time sync stale or clock adjusted - forcing re-sync (current: %lu, last: %lu)", sec, lastSyncTime);
         timeReady = false;
         return Q_ERR_TIME_NOT_READY;
@@ -86,43 +98,50 @@ public:
     }
 
     // Step 3: Validate credentials
-    if (credentials.isEmpty()) {
+    if (credentials.isEmpty())
+    {
       ESP_LOGE(TAG, "Empty credentials provided");
       return Q_ERR_INVALID_CREDENTIALS;
     }
 
     // Step 4: Initialize/Update HTTP Client
-    if (client == NULL || credentials != cachedCredentials) {
+    if (client == NULL || credentials != cachedCredentials)
+    {
       int splitIndex = credentials.indexOf(':');
-      if (splitIndex == -1 || splitIndex == 0) {
+      if (splitIndex == -1 || splitIndex == 0)
+      {
         ESP_LOGE(TAG, "Invalid credentials format - missing or misplaced ':' separator");
         return Q_ERR_INVALID_CREDENTIALS;
       }
 
       String deviceId = credentials.substring(0, splitIndex);
-      if (deviceId.length() < 10 || deviceId.length() > 40) {
+      if (deviceId.length() < 10 || deviceId.length() > 40)
+      {
         ESP_LOGE(TAG, "Invalid device ID length: %d (expected 10-40)", deviceId.length());
         return Q_ERR_INVALID_DID;
       }
 
       String token = credentials.substring(splitIndex + 1);
-      if (token.length() < 5) {
+      if (token.length() < 5)
+      {
         ESP_LOGE(TAG, "Invalid token length: %d (expected >= 5)", token.length());
         return Q_ERR_INVALID_TOKEN;
       }
 
-      if (client == NULL) {
+      if (client == NULL)
+      {
         esp_http_client_config_t cfg = {
-          .url = "https://qrystal-uplink-server-staging.up.railway.app/api/v1/heartbeat",
-          .crt_bundle_attach = esp_crt_bundle_attach,
-          .keep_alive_enable = true,
-          .keep_alive_idle = 5,
-          .keep_alive_interval = 5,
-          .keep_alive_count = 3,
+            .url = "https://on.uplink.qrystal.partners/api/v1/heartbeat",
+            .crt_bundle_attach = esp_crt_bundle_attach,
+            .keep_alive_enable = true,
+            .keep_alive_idle = 5,
+            .keep_alive_interval = 5,
+            .keep_alive_count = 3,
         };
 
         client = esp_http_client_init(&cfg);
-        if (!client) {
+        if (!client)
+        {
           ESP_LOGE(TAG, "Failed to initialize HTTP client");
           return Q_ESP_HTTP_INIT_FAILED;
         }
@@ -136,14 +155,18 @@ public:
 
     // Step 5: Send HTTP Request
     esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
+    if (err == ESP_OK)
+    {
       int http_code = esp_http_client_get_status_code(client);
-      if (http_code >= 200 && http_code < 300) {
+      if (http_code >= 200 && http_code < 300)
+      {
         return Q_OK;
       }
       ESP_LOGE(TAG, "Server returned HTTP %d", http_code);
       return Q_QRYSTAL_ERR;
-    } else {
+    }
+    else
+    {
       ESP_LOGE(TAG, "HTTP request failed: %s (0x%x)", esp_err_to_name(err), err);
       reset_client();
       return Q_ESP_HTTP_ERROR;

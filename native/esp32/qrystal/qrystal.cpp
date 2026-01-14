@@ -168,7 +168,7 @@ Qrystal::QRYSTAL_STATE Qrystal::uplink_blocking(const std::string &credentials)
              * - Aggressive keep-alive probes to detect dead connections quickly
              */
             esp_http_client_config_t cfg = {
-                .url = "https://qrystal-uplink-server-staging.up.railway.app/api/v1/heartbeat",
+                .url = "https://on.uplink.qrystal.partners/api/v1/heartbeat",
                 .crt_bundle_attach = esp_crt_bundle_attach,
                 .keep_alive_enable = true,
                 .keep_alive_idle = 5,     /* Start probes after 5s idle */
