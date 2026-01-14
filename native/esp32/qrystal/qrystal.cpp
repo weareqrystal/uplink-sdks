@@ -16,7 +16,7 @@
 #include "qrystal.hpp"
 
 /** @brief Log tag for ESP_LOG* macros */
-static const char *TAG = "qrystal";
+static const char *TAG = "qrystal_uplink";
 
 /**
  * @brief Minimum valid epoch timestamp (Jan 1, 2026 09:09:09 UTC+4).
