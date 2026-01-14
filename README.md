@@ -1,4 +1,6 @@
-<img width="64" height="64" alt="Qrystal Partners Logo Light" src="https://github.com/user-attachments/assets/25d51146-3adf-4179-b78e-6723325dcb00" />
+<!-- <img width="100" height="100" alt="Qrystal Partners Logo" src="https://github.com/user-attachments/assets/bbed86fe-a7e8-43ba-aeee-cdc02c6e7e02" /> -->
+<!-- <img width="64" height="64" alt="Qrystal Partners Logo Light" src="https://github.com/user-attachments/assets/25d51146-3adf-4179-b78e-6723325dcb00" /> -->
+<img width="99" height="99" alt="Qrystal Partners Logo" src="https://github.com/user-attachments/assets/0414b74b-da39-4034-ad0a-26ee9702fe98" />
 
 # Qrystal Uplink SDKs
 
