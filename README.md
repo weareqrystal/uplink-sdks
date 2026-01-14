@@ -1,3 +1,5 @@
+<img width="1280" height="640" alt="Qrystal Partners Logo" src="https://github.com/user-attachments/assets/459c4653-19da-43ad-800e-c008b03de4ca" />
+
 # Qrystal Uplink SDKs
 
 Official SDKs for [Qrystal Uplink](https://uplink.qrystal.partners/) — a device monitoring service for IoT devices.
