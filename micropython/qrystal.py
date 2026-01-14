@@ -6,10 +6,10 @@
 # <https://uplink.qrystal.partners/>
 
 """
-Qrystal Uplink SDK for MicroPython (ESP32)
+Qrystal Uplink SDK for MicroPython
 
 This module provides a simple interface for sending heartbeat signals
-from ESP32 devices running MicroPython to the Qrystal Uplink service.
+from MicroPython devices to the Qrystal Uplink service.
 
 Usage:
     from qrystal import Qrystal

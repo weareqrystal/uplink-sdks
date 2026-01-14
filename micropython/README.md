@@ -1,10 +1,17 @@
-# Qrystal SDK for ESP32 (MicroPython)
+# Qrystal SDK for MicroPython
 
-Send heartbeats to [Qrystal Uplink](https://uplink.qrystal.partners/) from ESP32 devices using MicroPython.
+Send heartbeats to [Qrystal Uplink](https://uplink.qrystal.partners/) from any MicroPython device with WiFi.
+
+## Supported Boards
+
+Any MicroPython board with WiFi support, including:
+- ESP32 / ESP8266
+- Raspberry Pi Pico W
+- Other WiFi-enabled MicroPython boards
 
 ## Installation
 
-1. Flash [MicroPython firmware](https://micropython.org/download/ESP32_GENERIC/) to your ESP32 using [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/) or your preferred flashing tool.
+1. Flash [MicroPython firmware](https://micropython.org/download/) to your board.
 
 2. Upload `qrystal.py` to your device using [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html), [Thonny](https://thonny.org/), or [ampy](https://github.com/scientifichackers/ampy):
 

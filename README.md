@@ -22,13 +22,13 @@ Qrystal Uplink allows you to monitor the health and connectivity of your IoT dev
 |----------|-----------|----------|---------------|
 | ESP32 | Arduino | C++ | [arduino/esp32/](arduino/esp32/) |
 | ESP32 | ESP-IDF (Native) | C++ | [native/esp32/](native/esp32/qrystal/) |
-| ESP32 | MicroPython | Python | [micropython/esp32/](micropython/esp32/) |
+| Any | MicroPython | Python | [micropython/](micropython/) |
 
 ### Which SDK should I use?
 
 - **Arduino SDK**: Best for beginners and rapid prototyping. Uses the Arduino framework and is easy to integrate into existing Arduino projects.
 - **Native ESP-IDF SDK**: Best for production deployments and projects already using ESP-IDF. Offers more control and slightly better performance.
-- **MicroPython SDK**: Best for Python developers and rapid prototyping. Uses the MicroPython runtime and is ideal for quick iterations and scripting.
+- **MicroPython SDK**: Best for Python developers and rapid prototyping. Works on any MicroPython board with WiFi (ESP32, ESP8266, Raspberry Pi Pico W, etc.).
 
 ## Quick Start
 
@@ -42,7 +42,7 @@ Follow the setup guide for your preferred framework:
 
 - [Arduino SDK Setup](arduino/esp32/)
 - [Native ESP-IDF SDK Setup](native/esp32/qrystal/)
-- [MicroPython SDK Setup](micropython/esp32/)
+- [MicroPython SDK Setup](micropython/)
 
 ### 3. Send heartbeats
 
