@@ -51,7 +51,7 @@ void loop()
     for (;;)
     {
         // REPLACE DEVICE ID WITH YOUR DEVICE'S ID AND SET THE TOKEN
-        Qrystal::QRYSTAL_STATE s = q.heartbeat("<DEVICE_ID>:<DEVICE_TOKEN>");
+        Qrystal::QRYSTAL_STATE s = q.uplink_blocking("<DEVICE_ID>:<DEVICE_TOKEN>");
         // optionally, handle errors here
         // if (s != Q_OK) {
         //

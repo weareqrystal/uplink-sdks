@@ -1,41 +1,48 @@
 # Qrystal SDK for ESP32 (Arduino)
 
-## Step 1: Adding board support to Arduino
+Send heartbeats to [Qrystal Uplink](https://uplink.qrystal.partners/) from ESP32 devices using Arduino.
 
-Add the additional board URL shown below to your Arduino IDE and install the board extension titled "ESP32" by Espressif.
+## Installation
 
-```txt
-https://espressif.github.io/arduino-esp32/package_esp32_index.json
-```
+1. Add ESP32 board support in Arduino IDE: **File > Preferences**, add `https://espressif.github.io/arduino-esp32/package_esp32_index.json` to Board Manager URLs, then install "ESP32" from Boards Manager.
 
-## Step 2: Adding the Qrystal library to your project
+2. Copy `qrystal.hpp` to your project folder.
 
-Once you've configured the Arduino IDE, create a new Arduino project. If you already have a project, run the following command in your terminal to download the header file:
-
-```bash
-curl -o qrystal.hpp https://raw.githubusercontent.com/mikayelgr/qrystal_uplink_sdks/refs/heads/main/arduino/esp32/qrystal.hpp
-```
-
-## Step 3: Setting up
-
-Once the library has been added, initialize it like this:
+## Usage
 
 ```cpp
-// include the library
+#include <WiFi.h>
 #include "qrystal.hpp"
 
-// initialize qrystal object
 Qrystal q;
 
 void setup() {
-    // perform WiFi setup here as usual
+    Serial.begin(115200);
+    WiFi.begin("your-wifi", "your-password");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
 }
 
 void loop() {
-    // place the uplink code in the main loop. replace <device-id> with your device id
-    // and the <token> with your token.
-    q.heartbeat("<device-id>:<token>");
+    Qrystal::QRYSTAL_STATE status = Qrystal::uplink_blocking("device-id:token");
+
+    if (status != Qrystal::Q_OK) {
+        Serial.printf("Heartbeat failed: %d\n", status);
+    }
+
+    delay(10000);
 }
 ```
 
-After a while, you will see the state of the device change from "Waiting" to "Healthy". At that point, you're ready to go!
+## Status Codes
+
+| Status | Meaning |
+|--------|---------|
+| `Q_OK` | Success |
+| `Q_QRYSTAL_ERR` | Server error (check credentials) |
+| `Q_ERR_NO_WIFI` | WiFi not connected |
+| `Q_ERR_TIME_NOT_READY` | NTP sync in progress, retry shortly |
+| `Q_ERR_INVALID_CREDENTIALS` | Bad format (expected `id:token`) |
+| `Q_ERR_INVALID_DID` | Device ID must be 10-40 chars |
+| `Q_ERR_INVALID_TOKEN` | Token must be 5+ chars |
+| `Q_ESP_HTTP_INIT_FAILED` | HTTP client init failed |
+| `Q_ESP_HTTP_ERROR` | HTTP request failed |
