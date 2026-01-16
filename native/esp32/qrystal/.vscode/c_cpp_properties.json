@@ -1,9 +1,14 @@
 {
   "configurations": [
     {
-      "name": "Default",
+      "name": "espidf_qrystal_blocking",
       "cStandard": "c17",
       "compileCommands": "${workspaceFolder}/examples/espidf_qrystal/build/compile_commands.json"
+    },
+    {
+      "name": "espidf_qrystal_non_blocking",
+      "cStandard": "c17",
+      "compileCommands": "${workspaceFolder}/examples/espidf_qrystal_nonblocking/build/compile_commands.json"
     }
   ],
   "version": 4

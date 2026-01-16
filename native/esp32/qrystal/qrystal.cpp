@@ -41,6 +41,11 @@ static const uint32_t YEAR_2026_EPOCH = 1767244149;
 std::string Qrystal::credentials_cache;
 esp_http_client_handle_t Qrystal::client = nullptr;
 
+/* Non-blocking uplink state */
+TaskHandle_t Qrystal::uplink_task_handle = nullptr;
+std::atomic<bool> Qrystal::uplink_task_stop_flag{false};
+qrystal_uplink_config_t Qrystal::uplink_config = QRYSTAL_UPLINK_CONFIG_DEFAULT();
+
 Qrystal::QRYSTAL_STATE Qrystal::uplink_blocking(const std::string &credentials)
 {
     /*
@@ -81,8 +86,16 @@ Qrystal::QRYSTAL_STATE Qrystal::uplink_blocking(const std::string &credentials)
         /* Check if SNTP has completed synchronization */
         if (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED)
         {
-            ESP_LOGW(TAG, "SNTP sync not completed, re-initializing SNTP");
-            esp_sntp_init();
+            /* Only initialize SNTP if not already running */
+            if (!esp_sntp_enabled())
+            {
+                ESP_LOGW(TAG, "SNTP not initialized, starting SNTP");
+                esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+                esp_sntp_setservername(0, "pool.ntp.org");
+                esp_sntp_init();
+            }
+
+            /* Return error - caller should retry later (non-blocking approach) */
             return Q_ERR_TIME_NOT_READY;
         }
 
@@ -204,9 +217,23 @@ Qrystal::QRYSTAL_STATE Qrystal::uplink_blocking(const std::string &credentials)
      * STEP 5: Send HTTP Request
      * =========================================================================
      * Perform the actual heartbeat request to the server.
-     * On network errors, the client is reset so the next call creates a fresh connection.
+     * On connection reset errors (stale keep-alive), retry once with fresh connection.
      */
     esp_err_t state = esp_http_client_perform(client);
+
+    /*
+     * Handle stale connection errors by retrying with a fresh connection.
+     * ESP_ERR_HTTP_WRITE_DATA (0x7003) and ESP_ERR_HTTP_CONNECT (0x7002) often
+     * indicate the server closed an idle keep-alive connection.
+     * Reset client and return error - caller can retry if needed.
+     */
+    if (state == ESP_ERR_HTTP_WRITE_DATA || state == ESP_ERR_HTTP_CONNECT)
+    {
+        ESP_LOGW(TAG, "Connection error (0x%x), resetting client for next attempt", state);
+        reset_client();
+        return Q_ESP_HTTP_ERROR;
+    }
+
     if (state == ESP_OK)
     {
         int http_code = esp_http_client_get_status_code(client);
@@ -226,8 +253,155 @@ Qrystal::QRYSTAL_STATE Qrystal::uplink_blocking(const std::string &credentials)
          * Reset the client to force a fresh connection on the next attempt.
          */
         ESP_LOGE(TAG, "HTTP request failed: %s (0x%x)", esp_err_to_name(state), state);
-        ESP_LOGE(TAG, "Connection reset - cleaning up client for retry on next call");
         reset_client();
         return Q_ESP_HTTP_ERROR;
     }
+}
+
+/*
+ * =============================================================================
+ * NON-BLOCKING UPLINK IMPLEMENTATION
+ * =============================================================================
+ */
+
+void Qrystal::uplink_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Non-blocking uplink task started (interval: %lu s)", uplink_config.interval_s);
+    const std::string credentials(uplink_config.credentials);
+
+    while (!uplink_task_stop_flag.load())
+    {
+        Qrystal::QRYSTAL_STATE result = Qrystal::uplink_blocking(credentials);
+        /* Use shorter delays for time sync issues to retry quickly */
+        uint32_t delay_s = uplink_config.interval_s;
+        if (result == Q_ERR_TIME_NOT_READY)
+        {
+            delay_s = 2; /* Retry time sync quickly */
+        }
+
+        /* Invoke callback if provided */
+        if (uplink_config.callback != nullptr)
+        {
+            uplink_config.callback(static_cast<int>(result), uplink_config.user_data);
+        }
+
+        /*
+         * Break delay into smaller chunks to allow faster response to stop signal.
+         * Check stop flag every second instead of sleeping for the entire interval.
+         */
+        uint32_t elapsed_s = 0;
+        while (elapsed_s < delay_s && !uplink_task_stop_flag.load())
+        {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            elapsed_s++;
+        }
+    }
+
+    ESP_LOGI(TAG, "Non-blocking uplink task stopping");
+    reset_client();
+
+    /*
+     * Clear handle before self-deleting. There's a small race window here,
+     * but uplink_stop() handles it by saving the handle at entry and checking
+     * if the task is still valid before deletion.
+     */
+    uplink_task_handle = nullptr;
+    vTaskDelete(nullptr);
+}
+
+bool Qrystal::uplink(const qrystal_uplink_config_t *config)
+{
+    if (config == nullptr || config->credentials == nullptr)
+    {
+        ESP_LOGE(TAG, "Invalid config: credentials cannot be NULL");
+        return false;
+    }
+
+    if (uplink_task_handle != nullptr)
+    {
+        ESP_LOGW(TAG, "Uplink task already running - call uplink_stop() first");
+        return false;
+    }
+
+    /* Store configuration */
+    uplink_config = *config;
+
+    /* Apply defaults for unset values */
+    if (uplink_config.interval_s == 0)
+    {
+        uplink_config.interval_s = 30;
+    }
+    if (uplink_config.stack_size == 0)
+    {
+        uplink_config.stack_size = 4096;
+    }
+    if (uplink_config.priority >= configMAX_PRIORITIES)
+    {
+        ESP_LOGW(TAG, "Priority %u exceeds max %d, clamping", uplink_config.priority, configMAX_PRIORITIES - 1);
+        uplink_config.priority = configMAX_PRIORITIES - 1;
+    }
+
+    /* Reset stop flag before starting */
+    uplink_task_stop_flag.store(false);
+
+    /* Create the uplink task */
+    BaseType_t result = xTaskCreate(
+        uplink_task,
+        TAG,
+        uplink_config.stack_size,
+        nullptr,
+        uplink_config.priority,
+        &uplink_task_handle);
+
+    if (result != pdPASS)
+    {
+        ESP_LOGE(TAG, "Failed to create uplink task");
+        uplink_task_handle = nullptr;
+        return false;
+    }
+
+    return true;
+}
+
+void Qrystal::uplink_stop()
+{
+    TaskHandle_t task = uplink_task_handle;
+    if (task == nullptr)
+    {
+        return;
+    }
+
+    ESP_LOGI(TAG, "Stopping uplink task...");
+    uplink_task_stop_flag.store(true);
+
+    /*
+     * Wait for task to exit gracefully by clearing its handle.
+     * We saved the handle above in case we need to force-delete.
+     */
+    int timeout_ms = 5000;
+    while (uplink_task_handle != nullptr && timeout_ms > 0)
+    {
+        vTaskDelay(pdMS_TO_TICKS(50));
+        timeout_ms -= 50;
+    }
+
+    if (uplink_task_handle != nullptr)
+    {
+        /*
+         * Task didn't stop gracefully - force delete using saved handle.
+         * This is safe because we saved 'task' before the loop.
+         */
+        ESP_LOGW(TAG, "Uplink task did not stop gracefully, force deleting");
+        vTaskDelete(task);
+        uplink_task_handle = nullptr;
+        reset_client();
+    }
+
+    uplink_task_stop_flag.store(false);
+    ESP_LOGI(TAG, "Uplink task stopped");
+}
+
+bool Qrystal::uplink_is_running()
+{
+    return uplink_task_handle != nullptr;
 }

@@ -7,7 +7,13 @@
  * <https://uplink.qrystal.partners/>
  *
  * @file espidf_qrystal.cpp
- * @brief ESP-IDF Example - demonstrates sending heartbeat signals to Qrystal Uplink.
+ * @brief ESP-IDF Example - demonstrates the blocking uplink API.
+ *
+ * This example shows how to use the blocking Qrystal::uplink_blocking() API
+ * which gives you full control over heartbeat timing in your own task loop.
+ *
+ * For the non-blocking API that runs in a background task, see the
+ * espidf_qrystal_nonblocking example.
  *
  * Before running:
  * 1. Set your WiFi credentials below
@@ -120,7 +126,7 @@ extern "C" void app_main(void)
     // Initialize SNTP for time synchronization
     sntp_init_time();
 
-    // Main heartbeat loop
+    // Main heartbeat loop using blocking API
     ESP_LOGI(TAG, "Starting heartbeat loop");
     while (true)
     {
@@ -145,6 +151,6 @@ extern "C" void app_main(void)
             ESP_LOGE(TAG, "Heartbeat failed with code: %d", status);
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10000)); // Send heartbeat every 10 seconds
+        vTaskDelay(pdMS_TO_TICKS(30000)); // Send heartbeat every 30 seconds
     }
 }

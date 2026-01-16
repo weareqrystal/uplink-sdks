@@ -22,23 +22,98 @@ your_project/
 
 ## Usage
 
+The SDK supports two modes of operation:
+
+### Non-Blocking (Recommended)
+
+Heartbeats run automatically in a background FreeRTOS task:
+
+```cpp
+#include "qrystal.hpp"
+
+// Optional: callback to monitor heartbeat results
+void on_heartbeat(int state, void *user_data) {
+    if (state == Qrystal::Q_OK) {
+        ESP_LOGI("app", "Heartbeat sent");
+    }
+}
+
+// After WiFi is connected:
+qrystal_uplink_config_t config = QRYSTAL_UPLINK_CONFIG_DEFAULT();
+config.credentials = "device-id:token";
+config.interval_s = 30;            // 30 seconds
+config.callback = on_heartbeat;    // Optional
+
+Qrystal::uplink(&config);          // Starts background task
+
+// Your app continues - heartbeats happen automatically
+// ...
+
+Qrystal::uplink_stop();            // Stop when needed (e.g., before deep sleep)
+```
+
+### Blocking
+
+For manual control in your own task loop:
+
 ```cpp
 #include "qrystal.hpp"
 
 // In your main loop (after WiFi is connected):
-Qrystal::QRYSTAL_STATE status = Qrystal::uplink_blocking("device-id:token");
+while (true) {
+    Qrystal::QRYSTAL_STATE status = Qrystal::uplink_blocking("device-id:token");
 
-if (status == Qrystal::Q_OK) {
-    // Heartbeat sent
+    if (status == Qrystal::Q_OK) {
+        // Heartbeat sent
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(30000));  // 30 seconds
 }
 ```
 
-## Running the Example
+## API Reference
+
+### Non-Blocking API
+
+| Function | Description |
+|----------|-------------|
+| `Qrystal::uplink(config)` | Start background heartbeat task |
+| `Qrystal::uplink_stop()` | Stop the background task |
+| `Qrystal::uplink_is_running()` | Check if task is active |
+
+### Configuration (`qrystal_uplink_config_t`)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `credentials` | `const char*` | - | Device credentials (`"device-id:token"`) |
+| `interval_s` | `uint32_t` | 30 | Heartbeat interval in seconds |
+| `callback` | `qrystal_uplink_callback_t` | NULL | Optional completion callback |
+| `user_data` | `void*` | NULL | Context passed to callback |
+| `stack_size` | `uint32_t` | 4096 | Task stack size in bytes |
+| `priority` | `UBaseType_t` | 5 | FreeRTOS task priority |
+
+### Blocking API
+
+| Function | Description |
+|----------|-------------|
+| `Qrystal::uplink_blocking(credentials)` | Send a single heartbeat (blocks until complete) |
+
+## Running the Examples
+
+### Blocking Example
 
 ```bash
 cd examples/espidf_qrystal
-idf.py set-target <YOUR ESP BOARD NAME>
-idf.py flash
+idf.py set-target <YOUR_ESP_BOARD>
+idf.py flash monitor
+```
+
+### Non-Blocking Example
+
+```bash
+cd examples/espidf_qrystal_nonblocking
+idf.py set-target <YOUR_ESP_BOARD>
+idf.py flash monitor
 ```
 
 ## Return Codes
