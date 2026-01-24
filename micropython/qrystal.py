@@ -67,7 +67,7 @@ except ImportError:
 _YEAR_2026_EPOCH = 1767244149
 
 # Server endpoint
-_HEARTBEAT_URL = "https://on.uplink.qrystal.partners/api/v1/heartbeat"
+_HEARTBEAT_URL = "https://on.qrystaluplink.io/api/v1/heartbeat"
 
 
 class Qrystal:

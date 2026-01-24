@@ -139,7 +139,7 @@ public:
       if (client == NULL)
       {
         esp_http_client_config_t cfg = {
-            .url = "https://on.uplink.qrystal.partners/api/v1/heartbeat",
+            .url = "https://on.qrystaluplink.io/api/v1/heartbeat",
             .crt_bundle_attach = esp_crt_bundle_attach,
             .keep_alive_enable = true,
             .keep_alive_idle = 5,
