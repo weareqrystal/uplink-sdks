@@ -68,8 +68,16 @@ public:
     {
       if (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED)
       {
-        ESP_LOGW(TAG, "SNTP sync not completed, initializing SNTP");
-        esp_sntp_init();
+        static bool sntpInitialized = false;
+        if (!sntpInitialized)
+        {
+          ESP_LOGI(TAG, "Configuring SNTP");
+          esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+          esp_sntp_setservername(0, "pool.ntp.org");
+          esp_sntp_init();
+          sntpInitialized = true;
+        }
+        ESP_LOGW(TAG, "SNTP sync not completed, waiting for time sync");
         return Q_ERR_TIME_NOT_READY;
       }
 
